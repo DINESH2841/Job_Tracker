@@ -179,7 +179,7 @@ class JobTracker {
             day: 'numeric'
         });
 
-        const statusClass = job.status.replace(/\s+/g, '.');
+        const statusClass = job.status.replace(/\s+/g, '-');
         const notesSection = job.notes 
             ? `<div class="job-notes"><strong>Notes:</strong> ${this.escapeHtml(job.notes)}</div>` 
             : '';
