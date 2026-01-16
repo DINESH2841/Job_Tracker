@@ -277,27 +277,27 @@ h1 {
     font-weight: 600;
 }
 
-.status-Applied {
+.status-applied {
     background: #e3f2fd;
     color: #1976d2;
 }
 
-.status-Phone-Screen {
+.status-phone-screen {
     background: #fff3e0;
     color: #f57c00;
 }
 
-.status-Interview {
+.status-interview {
     background: #fff9c4;
     color: #f57f17;
 }
 
-.status-Offer {
+.status-offer {
     background: #c8e6c9;
     color: #388e3c;
 }
 
-.status-Rejected {
+.status-rejected {
     background: #ffcdd2;
     color: #d32f2f;
 }

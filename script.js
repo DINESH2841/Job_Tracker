@@ -79,7 +79,7 @@ class JobTracker {
 
     addJob(jobData) {
         const job = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             ...jobData,
             createdAt: new Date().toISOString()
         };
@@ -179,7 +179,7 @@ class JobTracker {
             day: 'numeric'
         });
 
-        const statusClass = job.status.replace(/\s+/g, '-');
+        const statusClass = job.status.replace(/\s+/g, '-').toLowerCase();
         const notesSection = job.notes 
             ? `<div class="job-notes"><strong>Notes:</strong> ${this.escapeHtml(job.notes)}</div>` 
             : '';
