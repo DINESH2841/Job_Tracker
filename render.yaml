@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: job-tracker-frontend
+    runtime: node
+    buildCommand: npm run build --workspace=frontend
+    startCommand: cd frontend && npm run start
+    envVars:
+      - key: NEXTAUTH_URL
+        value: https://job-tracker.dineshsevenni.me
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: VITE_API_URL
+        value: https://api.dineshsevenni.me
+    routes:
+      - path: /
+        destination: /
+
+  - type: web
+    name: job-tracker-backend
+    runtime: node
+    buildCommand: npm run build --workspace=backend
+    startCommand: cd backend && npm run start
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        value: https://job-tracker.dineshsevenni.me
+      - key: FRONTEND_URL
+        value: https://job-tracker.dineshsevenni.me
+      - key: JWT_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+    routes:
+      - path: /api
+        destination: /api
