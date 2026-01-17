@@ -3,16 +3,48 @@
 import { useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { format } from 'date-fns'
-import type { JobApplication, GmailAccount, ApplicationTimeline } from '@prisma/client'
 
-type ApplicationWithRelations = JobApplication & {
-  gmailAccount: GmailAccount | null
-  timeline: ApplicationTimeline[]
+// Lightweight types for Firebase-first placeholder data
+interface GmailAccountLite {
+  id: string
+  email: string
+  enabled?: boolean
+  lastSyncAt?: string | Date | null
 }
+
+interface ApplicationTimelineLite {
+  id: string
+  eventType: string
+  status?: string | null
+  description?: string | null
+  eventDate: string | Date
+}
+
+interface JobApplicationLite {
+  id: string
+  companyName: string
+  jobRole: string
+  status: ApplicationStatus
+  applicationDate: string | Date
+  hasReferral?: boolean
+  gmailAccount: GmailAccountLite | null
+  timeline: ApplicationTimelineLite[]
+  confidence?: 'HIGH' | 'MEDIUM' | 'LOW'
+  needsReview?: boolean
+  applicationSource?: string | null
+  manuallyEdited?: boolean
+  companyConfidence?: 'HIGH' | 'MEDIUM' | 'LOW'
+  roleConfidence?: 'HIGH' | 'MEDIUM' | 'LOW'
+  dateConfidence?: 'HIGH' | 'MEDIUM' | 'LOW'
+  notes?: string | null
+  emailLink?: string | null
+}
+
+type ApplicationWithRelations = JobApplicationLite
 
 interface DashboardClientProps {
   applications: ApplicationWithRelations[]
-  gmailAccounts: GmailAccount[]
+  gmailAccounts: GmailAccountLite[]
   stats: {
     total: number
     applied: number
@@ -39,7 +71,9 @@ const statusColors = {
   REJECTED: 'bg-red-100 text-red-800',
   WITHDRAWN: 'bg-gray-100 text-gray-800',
   ACCEPTED: 'bg-emerald-100 text-emerald-800',
-}
+} as const
+
+type ApplicationStatus = keyof typeof statusColors
 
 const confidenceColors = {
   HIGH: 'text-green-600',
@@ -221,14 +255,14 @@ export default function DashboardClient({ applications, gmailAccounts, stats, us
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <p className="text-xs text-gray-600 mb-2">Confidence Scores:</p>
                     <div className="flex space-x-4 text-xs">
-                      <span className={`${confidenceColors[app.companyConfidence]}`}>
-                        Company: {app.companyConfidence}
+                      <span className={`${confidenceColors[app.companyConfidence ?? 'HIGH']}`}>
+                        Company: {app.companyConfidence ?? 'HIGH'}
                       </span>
-                      <span className={`${confidenceColors[app.roleConfidence]}`}>
-                        Role: {app.roleConfidence}
+                      <span className={`${confidenceColors[app.roleConfidence ?? 'HIGH']}`}>
+                        Role: {app.roleConfidence ?? 'HIGH'}
                       </span>
-                      <span className={`${confidenceColors[app.dateConfidence]}`}>
-                        Date: {app.dateConfidence}
+                      <span className={`${confidenceColors[app.dateConfidence ?? 'HIGH']}`}>
+                        Date: {app.dateConfidence ?? 'HIGH'}
                       </span>
                     </div>
                   </div>

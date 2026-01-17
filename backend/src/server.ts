@@ -14,6 +14,10 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
+app.get("/", (_req, res) => {
+  res.json({ message: "Job Tracker Backend API", version: "1.0.0" });
+});
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
 });

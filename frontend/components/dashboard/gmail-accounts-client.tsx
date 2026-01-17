@@ -1,11 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import type { GmailAccount } from '@prisma/client'
 import { format } from 'date-fns'
 
+interface GmailAccountLite {
+  id: string
+  email: string
+  enabled?: boolean
+  createdAt?: string | Date
+  lastSyncAt?: string | Date | null
+}
+
 interface GmailAccountsClientProps {
-  gmailAccounts: GmailAccount[]
+  gmailAccounts: GmailAccountLite[]
 }
 
 export default function GmailAccountsClient({ gmailAccounts: initialAccounts }: GmailAccountsClientProps) {
@@ -129,7 +136,7 @@ export default function GmailAccountsClient({ gmailAccounts: initialAccounts }: 
                     </div>
                     <div className="text-sm text-gray-600 space-y-1">
                       <p>
-                        Added: {format(new Date(account.createdAt), 'MMM d, yyyy')}
+                        Added: {format(new Date(account.createdAt ?? Date.now()), 'MMM d, yyyy')}
                       </p>
                       {account.lastSyncAt && (
                         <p>
@@ -141,7 +148,7 @@ export default function GmailAccountsClient({ gmailAccounts: initialAccounts }: 
 
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => handleToggleEnabled(account.id, account.enabled)}
+                      onClick={() => handleToggleEnabled(account.id, account.enabled ?? true)}
                       className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
                     >
                       {account.enabled ? 'Disable' : 'Enable'}

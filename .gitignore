@@ -18,7 +18,7 @@ node_modules/
 # Build artifacts
 dist/
 build/
-<<<<<<< Updated upstream
+docs/
 .next/
 out/
 
@@ -44,6 +44,3 @@ coverage/
 # Production
 *.tsbuildinfo
 next-env.d.ts
-=======
->>>>>>> Stashed changes
-docs/

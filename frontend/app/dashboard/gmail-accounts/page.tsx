@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth-options'
-import { prisma } from '@/lib/prisma/client'
 import GmailAccountsClient from '@/components/dashboard/gmail-accounts-client'
 
 export default async function GmailAccountsPage() {
@@ -11,14 +10,7 @@ export default async function GmailAccountsPage() {
     redirect('/auth/signin')
   }
 
-  const gmailAccounts = await prisma.gmailAccount.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  })
+  const gmailAccounts: any[] = []
 
   return <GmailAccountsClient gmailAccounts={gmailAccounts} />
 }

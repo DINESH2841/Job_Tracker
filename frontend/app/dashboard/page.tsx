@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth-options'
-import { prisma } from '@/lib/prisma/client'
 import DashboardClient from '@/components/dashboard/dashboard-client'
 
 export default async function DashboardPage() {
@@ -11,45 +10,17 @@ export default async function DashboardPage() {
     redirect('/auth/signin')
   }
 
-  // Fetch user's job applications
-  const applications = await prisma.jobApplication.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    include: {
-      gmailAccount: true,
-      timeline: {
-        orderBy: {
-          eventDate: 'desc',
-        },
-        take: 5,
-      },
-    },
-    orderBy: {
-      applicationDate: 'desc',
-    },
-  })
-
-  // Fetch Gmail accounts
-  const gmailAccounts = await prisma.gmailAccount.findMany({
-    where: {
-      userId: session.user.id,
-    },
-  })
-
-  // Calculate statistics
+  // Firebase-first: placeholder data until Firebase integration is wired
+  const applications: any[] = []
+  const gmailAccounts: any[] = []
   const stats = {
-    total: applications.length,
-    applied: applications.filter((app: any) => app.status === 'APPLIED').length,
-    phoneScreen: applications.filter((app: any) => app.status === 'PHONE_SCREEN').length,
-    interview: applications.filter((app: any) => 
-      app.status === 'INTERVIEW' || 
-      app.status === 'TECHNICAL_INTERVIEW' || 
-      app.status === 'FINAL_INTERVIEW'
-    ).length,
-    offer: applications.filter((app: any) => app.status === 'OFFER').length,
-    rejected: applications.filter((app: any) => app.status === 'REJECTED').length,
-    referrals: applications.filter((app: any) => app.hasReferral).length,
+    total: 0,
+    applied: 0,
+    phoneScreen: 0,
+    interview: 0,
+    offer: 0,
+    rejected: 0,
+    referrals: 0,
   }
 
   return (
