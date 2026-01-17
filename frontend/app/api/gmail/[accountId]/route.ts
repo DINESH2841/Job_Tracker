@@ -5,9 +5,10 @@ import { prisma } from '@/lib/prisma/client'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { accountId: string } }
+  context: { params: Promise<{ accountId: string }> }
 ) {
   const session = await getServerSession(authOptions)
+  const { accountId } = await context.params
 
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -16,7 +17,7 @@ export async function DELETE(
   try {
     const account = await prisma.gmailAccount.findUnique({
       where: {
-        id: params.accountId,
+        id: accountId,
         userId: session.user.id,
       },
     })
@@ -26,7 +27,7 @@ export async function DELETE(
     }
 
     await prisma.gmailAccount.delete({
-      where: { id: params.accountId },
+      where: { id: accountId },
     })
 
     return NextResponse.json({ success: true })

@@ -2,6 +2,18 @@
 
 A comprehensive, production-grade job application tracking system that automatically extracts and tracks job applications from multiple Gmail accounts using AI-powered email analysis.
 
+## Backend (Phase 1 scaffolding)
+
+Initial backend skeleton for authentication and account foundations now lives in `/backend`.
+
+- `cd backend && npm install`
+- Copy `.env.example` to `.env` and fill Google OAuth credentials plus a strong `JWT_SECRET`
+- Run `npm run dev` (starts on port 4000 by default)
+- Health check: `GET http://localhost:4000/health`
+- Auth endpoints: `POST /auth/google` (expects `email`, `name`, `idToken` stub), `GET /auth/me`, `POST /auth/logout`
+
+Notes: Google token validation is stubbed; persistence is in-memory for now. Wire database and real token verification in Phase 2.
+
 ## 🚀 Live Demo
 
 This application is hosted on GitHub Pages (legacy version): [View Live Demo](https://dinesh2841.github.io/Job_Tracker/)
