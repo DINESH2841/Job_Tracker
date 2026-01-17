@@ -8,7 +8,9 @@ services:
     startCommand: cd frontend && npm run start
     envVars:
       - key: NODE_VERSION
-        value: 18.17.0
+        value: 20.11.0
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
       - key: NEXTAUTH_URL
         sync: false
       - key: NEXTAUTH_SECRET
@@ -43,7 +45,9 @@ services:
     startCommand: cd backend && npm run start
     envVars:
       - key: NODE_VERSION
-        value: 18.17.0
+        value: 20.11.0
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
       - key: PORT
         value: 4000
       - key: NODE_ENV
