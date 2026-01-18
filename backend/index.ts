@@ -1,5 +1,5 @@
 
-import * as functions from 'firebase-functions';
+import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
 
@@ -18,39 +18,39 @@ import { generateAuthUrl, handleOAuthCallback, getLinkedAccounts, syncEmailsForU
 
 // --- Callable Functions (Called from Frontend) ---
 
-export const startGmailAuth = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+export const startGmailAuth = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
     try {
-        const uid = context.auth.uid;
+        const uid = request.auth.uid;
         const url = generateAuthUrl(uid);
         return { url };
     } catch (error: any) {
         console.error('Error in startGmailAuth:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        throw new HttpsError('internal', (error && error.message) || 'Internal error');
     }
 });
 
-export const getGmailAccounts = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+export const getGmailAccounts = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
     try {
-        const uid = context.auth.uid;
+        const uid = request.auth.uid;
         const accounts = await getLinkedAccounts(uid);
         return { accounts };
     } catch (error: any) {
         console.error('Error in getGmailAccounts:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+        throw new HttpsError('internal', (error && error.message) || 'Internal error');
     }
 });
 
-export const syncGmailNow = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
-        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+export const syncGmailNow = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
-    const uid = context.auth.uid;
+    const uid = request.auth.uid;
     console.log(`Starting manual sync for user ${uid}...`);
 
     try {
@@ -85,7 +85,7 @@ export const syncGmailNow = functions.https.onCall(async (data, context) => {
 
     } catch (error: any) {
         console.error('Error in syncGmailNow:', error);
-        throw new functions.https.HttpsError('internal', "Failed to sync emails: " + error.message);
+        throw new HttpsError('internal', "Failed to sync emails: " + ((error && error.message) || 'Unknown error'));
     }
 });
 
@@ -93,7 +93,7 @@ export const syncGmailNow = functions.https.onCall(async (data, context) => {
  * Cloud Function handling the OAuth callback from Google.
  * Exchanges code for tokens and triggers initial sync.
  */
-export const oauthCallback = functions.https.onRequest(async (req, res) => {
+export const oauthCallback = onRequest(async (req, res) => {
     const code = req.query.code as string;
     const state = req.query.state as string; // This is the UID
     const error = req.query.error;
