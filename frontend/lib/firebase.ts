@@ -32,12 +32,11 @@ try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
-    functions = getFunctions(app);
+    functions = getFunctions(app, "us-central1");
     googleProvider = new GoogleAuthProvider();
 
     // Connect to emulators only when explicitly enabled
-    const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === 'true';
-    if (useEmulators) {
+    if (process.env.NEXT_PUBLIC_USE_EMULATORS === 'true') {
         try {
             connectAuthEmulator(auth, 'http://localhost:9099');
         } catch {}
