@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import { FirebaseError } from 'firebase/app'
 import { startGmailAuth, getGmailAccounts, syncGmailNow } from '@/lib/api'
 import { useAuth } from '@/components/providers/auth-provider'
 
@@ -21,14 +22,25 @@ export default function GmailAccountsClient() {
   const [isSyncing, setIsSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const friendlyMessage = (err: unknown, fallback: string) => {
+    if (err instanceof FirebaseError) {
+      return err.message || fallback
+    }
+    if (err && typeof err === 'object' && 'message' in err) {
+      return (err as any).message || fallback
+    }
+    return fallback
+  }
+
   const fetchAccounts = async () => {
     try {
       const data = await getGmailAccounts()
       setAccounts(data)
       setIsLoading(false)
+      setError(null)
     } catch (err) {
       console.error('Failed to fetch accounts', err)
-      setError('Failed to load accounts')
+      setError(friendlyMessage(err, 'Failed to load accounts'))
       setIsLoading(false)
     }
   }
@@ -48,7 +60,7 @@ export default function GmailAccountsClient() {
       }, 3000)
     } catch (err) {
       console.error('Failed to start auth', err)
-      alert('Failed to start connection process')
+      alert(friendlyMessage(err, 'Failed to start connection process'))
     }
   }
 
@@ -60,7 +72,7 @@ export default function GmailAccountsClient() {
       alert(result.message || 'Sync successful!')
     } catch (err) {
       console.error('Sync failed', err)
-      alert('Failed to sync emails. Please try again.')
+      alert(friendlyMessage(err, 'Failed to sync emails. Please try again.'))
     } finally {
       setIsSyncing(false)
     }

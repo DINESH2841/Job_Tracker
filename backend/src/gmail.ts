@@ -3,13 +3,20 @@ import { google } from 'googleapis';
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 
+function requireEnv(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new functions.https.HttpsError('internal', `${name} is not configured`);
+    }
+    return value;
+}
+
 // Initialize OAuth2 client
 const getOAuth2Client = () => {
-    return new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI
-    );
+    const clientId = requireEnv('GOOGLE_CLIENT_ID');
+    const clientSecret = requireEnv('GOOGLE_CLIENT_SECRET');
+    const redirectUri = requireEnv('GOOGLE_REDIRECT_URI');
+    return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 };
 
 export const getLinkedAccounts = async (uid: string) => {
