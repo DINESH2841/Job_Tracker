@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { SessionProvider } from '@/components/providers/session-provider'
+import { AuthProvider } from '@/components/providers/auth-provider'
 
 export const metadata: Metadata = {
   title: 'Job Tracker - Track Your Job Applications',
@@ -15,9 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased">
-        <SessionProvider>
+        <AuthProvider>
           {children}
-        </SessionProvider>
+        </AuthProvider>
       </body>
     </html>
   )

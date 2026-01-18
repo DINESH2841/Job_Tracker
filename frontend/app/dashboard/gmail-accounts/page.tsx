@@ -1,16 +1,8 @@
-import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/auth-options'
+'use client'
+
 import GmailAccountsClient from '@/components/dashboard/gmail-accounts-client'
+import { AuthProvider } from '@/components/providers/auth-provider';
 
-export default async function GmailAccountsPage() {
-  const session = await getServerSession(authOptions)
-
-  if (!session?.user) {
-    redirect('/auth/signin')
-  }
-
-  const gmailAccounts: any[] = []
-
-  return <GmailAccountsClient gmailAccounts={gmailAccounts} />
+export default function GmailAccountsPage() {
+  return <GmailAccountsClient />
 }

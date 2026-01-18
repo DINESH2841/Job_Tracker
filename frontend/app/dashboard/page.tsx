@@ -1,34 +1,43 @@
-import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/auth-options'
-import DashboardClient from '@/components/dashboard/dashboard-client'
+// TASK:
+// Build a simple applications dashboard using Firestore data.
+// Do NOT create or modify files outside dashboard and lib directories.
+// Use existing Firebase client from lib/firebase.ts.
+'use client'
 
-export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/components/providers/auth-provider'
+import ApplicationTable from '@/components/dashboard/ApplicationTable'
 
-  if (!session?.user) {
-    redirect('/auth/signin')
-  }
+export default function DashboardPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
 
-  // Firebase-first: placeholder data until Firebase integration is wired
-  const applications: any[] = []
-  const gmailAccounts: any[] = []
-  const stats = {
-    total: 0,
-    applied: 0,
-    phoneScreen: 0,
-    interview: 0,
-    offer: 0,
-    rejected: 0,
-    referrals: 0,
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/signin')
+    }
+  }, [user, loading, router])
+
+  if (loading || !user) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
 
   return (
-    <DashboardClient 
-      applications={applications}
-      gmailAccounts={gmailAccounts}
-      stats={stats}
-      user={session.user}
-    />
+    <main className="min-h-screen p-6 space-y-6">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Applications</h1>
+          <p className="text-sm text-gray-500">Tracking your job applications from Firestore</p>
+        </div>
+        <div className="text-sm text-gray-600">
+          {user.displayName || user.email}
+        </div>
+      </header>
+
+      <section className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-lg overflow-hidden">
+        <ApplicationTable userId={user.uid} />
+      </section>
+    </main>
   )
 }

@@ -1,13 +1,12 @@
 'use client'
 
-import { signIn } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, googleProvider } from '@/lib/firebase'
 
 export default function SignInPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -15,33 +14,11 @@ export default function SignInPage() {
     setIsLoading(true)
     setError('')
     try {
-      await signIn('google', { callbackUrl: '/dashboard' })
-    } catch (error) {
-      setError('Failed to sign in with Google')
-      setIsLoading(false)
-    }
-  }
-
-  const handleCredentialsSignIn = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
-
-    try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      })
-
-      if (result?.error) {
-        setError('Invalid email or password')
-        setIsLoading(false)
-      } else {
-        router.push('/dashboard')
-      }
-    } catch (error) {
-      setError('An error occurred during sign in')
+      await signInWithPopup(auth, googleProvider)
+      router.push('/dashboard')
+    } catch (error: any) {
+      console.error('Login error:', error)
+      setError(error.message || 'Failed to sign in with Google')
       setIsLoading(false)
     }
   }
@@ -55,7 +32,7 @@ export default function SignInPage() {
               Welcome Back
             </h1>
             <p className="text-gray-600">
-              Sign in to your Job Tracker account
+              Sign in to your Job Tracker account (Phase 1)
             </p>
           </div>
 
@@ -90,62 +67,6 @@ export default function SignInPage() {
             </svg>
             <span>Continue with Google</span>
           </button>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with email</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleCredentialsSignIn} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-purple-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50"
-            >
-              {isLoading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <a href="/auth/signup" className="text-purple-600 font-semibold hover:text-purple-700">
-              Sign up
-            </a>
-          </p>
         </div>
       </div>
     </div>
