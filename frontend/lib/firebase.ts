@@ -3,7 +3,11 @@ import { getAuth, Auth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 
 // Helper to prevent build crashes when env vars are missing
-const getEnv = (key: string, fallback: string) => process.env[key] || fallback;
+const getEnv = (key: string, fallback: string) => {
+    const value = process.env[key];
+    if (!value) console.warn(`Missing env var: ${key}, using fallback`);
+    return value || fallback;
+};
 
 const firebaseConfig = {
     apiKey: getEnv("NEXT_PUBLIC_FIREBASE_API_KEY", "AIzaSy_MOCK_KEY_FOR_BUILD"),
