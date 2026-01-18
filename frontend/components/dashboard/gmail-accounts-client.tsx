@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
-import { startGmailAuth, getGmailAccounts } from '@/lib/api'
+import { startGmailAuth, getGmailAccounts, syncGmailNow } from '@/lib/api'
 import { useAuth } from '@/components/providers/auth-provider'
 
 interface GmailAccountLite {
@@ -18,6 +18,7 @@ export default function GmailAccountsClient() {
   const { user } = useAuth()
   const [accounts, setAccounts] = useState<GmailAccountLite[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchAccounts = async () => {
@@ -41,30 +42,24 @@ export default function GmailAccountsClient() {
   const handleLinkAccount = async () => {
     try {
       const url = await startGmailAuth()
-
-      // Open popup
-      const width = 600
-      const height = 700
-      const left = window.screen.width / 2 - width / 2
-      const top = window.screen.height / 2 - height / 2
-
-      const popup = window.open(
-        url,
-        'GmailConnect',
-        `width=${width},height=${height},left=${left},top=${top}`
-      )
-
-      // Poll for popup closure to refresh list
-      const timer = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(timer)
-          fetchAccounts()
-        }
-      }, 1000)
-
+      window.location.href = url
     } catch (err) {
       console.error('Failed to start auth', err)
       alert('Failed to start connection process')
+    }
+  }
+
+  const handleSyncNow = async () => {
+    setIsSyncing(true)
+    try {
+      await syncGmailNow()
+      await fetchAccounts() // Refresh list to update lastSyncAt
+      alert('Sync successful! Your applications are being updated.')
+    } catch (err) {
+      console.error('Sync failed', err)
+      alert('Failed to sync emails. Please try again.')
+    } finally {
+      setIsSyncing(false)
     }
   }
 
@@ -98,7 +93,7 @@ export default function GmailAccountsClient() {
           </div>
         )}
 
-        <div className="mb-6">
+        <div className="mb-6 flex gap-4">
           <button
             onClick={handleLinkAccount}
             className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors flex items-center space-x-2 shadow-sm"
@@ -106,7 +101,21 @@ export default function GmailAccountsClient() {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
-            <span>Link New Gmail Account</span>
+            <span>Connect Gmail</span>
+          </button>
+
+          <button
+            onClick={handleSyncNow}
+            disabled={isSyncing || accounts.length === 0}
+            className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center space-x-2 shadow-sm ${isSyncing || accounts.length === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isSyncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{isSyncing ? 'Syncing...' : 'Sync Now'}</span>
           </button>
         </div>
 
@@ -135,8 +144,8 @@ export default function GmailAccountsClient() {
                       <h3 className="text-lg font-semibold text-gray-900">{account.email}</h3>
                       <span
                         className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${account.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
                           }`}
                       >
                         {account.status || 'Active'}

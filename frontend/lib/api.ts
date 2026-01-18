@@ -1,41 +1,35 @@
-import { auth } from "./firebase";
+import { functions } from "./firebase";
+import { httpsCallable } from "firebase/functions";
 
-// Use Firebase Cloud Functions directly
-const API_BASE_URL = "https://us-central1-job-tracker-abb1c.cloudfunctions.net";
+// Interface for API responses
+interface AuthUrlResponse {
+    url: string;
+}
 
-export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const user = auth.currentUser;
-    if (!user) {
-        throw new Error("User not authenticated");
-    }
+interface GmailAccountsResponse {
+    accounts: any[];
+}
 
-    const token = await user.getIdToken();
-
-    const headers = {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-        ...options.headers,
-    };
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Request failed with status ${response.status}`);
-    }
-
-    return response.json();
+interface SyncResponse {
+    success: boolean;
+    count?: number;
+    message?: string;
 }
 
 export async function startGmailAuth() {
-    const { url } = await fetchWithAuth("/startGmailAuth");
-    return url;
+    const startAuth = httpsCallable<void, AuthUrlResponse>(functions, 'startGmailAuth');
+    const result = await startAuth();
+    return result.data.url;
 }
 
 export async function getGmailAccounts() {
-    const { accounts } = await fetchWithAuth("/getGmailAccounts");
-    return accounts;
+    const getAccounts = httpsCallable<void, GmailAccountsResponse>(functions, 'getGmailAccounts');
+    const result = await getAccounts();
+    return result.data.accounts;
+}
+
+export async function syncGmailNow() {
+    const syncFn = httpsCallable<void, SyncResponse>(functions, 'syncGmailNow');
+    const result = await syncFn();
+    return result.data;
 }

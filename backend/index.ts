@@ -11,57 +11,81 @@ if (admin.apps.length === 0) {
     admin.initializeApp();
 }
 
-const verifyAuthHeader = async (req: functions.https.Request) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new functions.https.HttpsError('unauthenticated', 'Missing token');
+// verifyAuthHeader removed as it is not needed for Callable Functions
+
+
+import { generateAuthUrl, handleOAuthCallback, getLinkedAccounts, syncEmailsForUser } from './src/gmail';
+
+// --- Callable Functions (Called from Frontend) ---
+
+export const startGmailAuth = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
-    const token = authHeader.split('Bearer ')[1];
-    const decoded = await admin.auth().verifyIdToken(token);
-    return decoded.uid;
-};
-
-import { generateAuthUrl, handleOAuthCallback, getLinkedAccounts } from './src/gmail';
-
-export const startGmailAuth = functions.https.onRequest(async (req, res) => {
-    // Handle CORS
-    res.set('Access-Control-Allow-Origin', '*');
-    if (req.method === 'OPTIONS') {
-        res.set('Access-Control-Allow-Methods', 'GET');
-        res.set('Access-Control-Allow-Headers', 'Authorization');
-        res.status(204).send('');
-        return;
-    }
-
     try {
-        const uid = await verifyAuthHeader(req);
+        const uid = context.auth.uid;
         const url = generateAuthUrl(uid);
-        res.json({ url });
+        return { url };
     } catch (error: any) {
-        console.error('Error generating auth URL:', error);
-        const statusCode = error.code === 'unauthenticated' ? 401 : 500;
-        res.status(statusCode).json({ error: error.message });
+        console.error('Error in startGmailAuth:', error);
+        throw new functions.https.HttpsError('internal', error.message);
     }
 });
 
-export const getGmailAccounts = functions.https.onRequest(async (req, res) => {
-    // Handle CORS
-    res.set('Access-Control-Allow-Origin', '*');
-    if (req.method === 'OPTIONS') {
-        res.set('Access-Control-Allow-Methods', 'GET');
-        res.set('Access-Control-Allow-Headers', 'Authorization');
-        res.status(204).send('');
-        return;
+export const getGmailAccounts = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
+    try {
+        const uid = context.auth.uid;
+        const accounts = await getLinkedAccounts(uid);
+        return { accounts };
+    } catch (error: any) {
+        console.error('Error in getGmailAccounts:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+export const syncGmailNow = functions.https.onCall(async (data, context) => {
+    if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    }
+    const uid = context.auth.uid;
+    console.log(`Starting manual sync for user ${uid}...`);
 
     try {
-        const uid = await verifyAuthHeader(req);
-        const accounts = await getLinkedAccounts(uid);
-        res.json({ accounts });
+        const accountsRef = admin.firestore().collection('users').doc(uid).collection('gmail_accounts');
+        const snapshot = await accountsRef.get();
+
+        if (snapshot.empty) {
+            return { success: false, message: "No connected Gmail accounts found." };
+        }
+
+        let syncCount = 0;
+        const promises = snapshot.docs.map(async (doc) => {
+            const d = doc.data();
+            const email = d.email;
+            // Construct token object required by simple-gmail or googleapis
+            const tokens = {
+                access_token: d.accessToken,
+                refresh_token: d.refreshToken,
+                scope: d.scope,
+                token_type: d.tokenType,
+                expiry_date: d.expiryDate
+            };
+
+            console.log(`Syncing email: ${email}`);
+            await syncEmailsForUser(uid, email, tokens);
+            syncCount++;
+        });
+
+        await Promise.all(promises);
+        console.log(`Synced ${syncCount} accounts for user ${uid}.`);
+        return { success: true, count: syncCount };
+
     } catch (error: any) {
-        console.error('Error fetching accounts:', error);
-        const statusCode = error.code === 'unauthenticated' ? 401 : 500;
-        res.status(statusCode).json({ error: error.message });
+        console.error('Error in syncGmailNow:', error);
+        throw new functions.https.HttpsError('internal', "Failed to sync emails: " + error.message);
     }
 });
 

@@ -10,7 +10,7 @@ import { useAuth } from '@/components/providers/auth-provider'
 import ApplicationTable from '@/components/dashboard/ApplicationTable'
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -30,8 +30,16 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold">Applications</h1>
           <p className="text-sm text-gray-500">Tracking your job applications from Firestore</p>
         </div>
-        <div className="text-sm text-gray-600">
-          {user.displayName || user.email}
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-600">
+            {user.displayName || user.email}
+          </span>
+          <button
+            onClick={() => signOut()}
+            className="text-sm text-red-600 hover:text-red-800 font-medium px-3 py-1 rounded hover:bg-red-50 transition-colors"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 

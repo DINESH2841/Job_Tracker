@@ -2,23 +2,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false; // client cannot write root user doc
+
       match /applications/{applicationId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId; // Allow status updates
+        allow create: if false; // created only by backend via sync
+        allow delete: if false; // do not allow deletion yet
       }
       
       match /gmail_accounts/{accountId} {
-         allow read, write: if request.auth != null && request.auth.uid == userId;
+         allow read: if request.auth != null && request.auth.uid == userId;
+         allow write: if false; // backend only (tokens stored here)
       }
     }
 
-    // Worker Registry (Phase 1.1 Foundation)
-    match /workers/{workerId} {
-      allow read: if request.auth != null; // Visible to authenticated users for monitoring
-      allow write: if false; // Only backend service accounts should write (enforced by Admin SDK)
-    }
-    
     // Default deny
     match /{document=**} {
       allow read, write: if false;
