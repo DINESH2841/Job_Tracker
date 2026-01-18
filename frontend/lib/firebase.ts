@@ -11,8 +11,12 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Initialize Firebase only if we have an API Key (prevents build crash)
+const app = getApps().length > 0
+    ? getApp()
+    : initializeApp(firebaseConfig);
+
+// Export instances or null if initialization failed (though init usually doesn't throw immediately on missing keys, auth usage does)
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
