@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { signOut } from 'next-auth/react'
 import { format } from 'date-fns'
 
 // Lightweight types for Firebase-first placeholder data
@@ -111,7 +110,7 @@ export default function DashboardClient({ applications, gmailAccounts, stats, us
                 Gmail Accounts ({gmailAccounts.length})
               </button>
               <button
-                onClick={() => signOut({ callbackUrl: '/' })}
+                onClick={() => window.location.href = '/'}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
               >
                 Sign Out

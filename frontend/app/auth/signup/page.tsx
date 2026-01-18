@@ -1,6 +1,5 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -15,16 +14,8 @@ export default function SignUpPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const result = await signIn('google', { 
-        redirect: false,
-        callbackUrl: '/dashboard'
-      });
-      
-      if (result?.error) {
-        setError(result.error);
-      } else if (result?.ok) {
-        router.push('/dashboard');
-      }
+      // Use Firebase Auth or redirect to your sign-in page
+      router.push('/auth/signin');
     } catch (err) {
       setError('An error occurred during sign up. Please try again.');
       console.error('Signup error:', err);

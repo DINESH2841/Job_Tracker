@@ -1,6 +1,7 @@
-import NextAuth from 'next-auth'
-import { authOptions } from '@/lib/auth/auth-options'
+export async function GET() {
+	return new Response(JSON.stringify({ error: 'NextAuth disabled' }), { status: 410 })
+}
 
-const handler = NextAuth(authOptions)
-
-export { handler as GET, handler as POST }
+export async function POST() {
+	return new Response(JSON.stringify({ error: 'NextAuth disabled' }), { status: 410 })
+}

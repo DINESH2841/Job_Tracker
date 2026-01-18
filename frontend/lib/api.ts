@@ -1,6 +1,7 @@
 import { auth } from "./firebase";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// Use Firebase Cloud Functions directly
+const API_BASE_URL = "https://us-central1-job-tracker-abb1c.cloudfunctions.net";
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const user = auth.currentUser;

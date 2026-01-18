@@ -16,7 +16,7 @@ export function signSession(user: User): string {
     email: user.email,
     provider: user.provider
   };
-  const options: SignOptions = { expiresIn: config.jwtExpiresIn as unknown as SignOptions["expiresIn"] };
+  const options: SignOptions = { expiresIn: "7d" };
   return sign(payload, config.jwtSecret as Secret, options);
 }
 
