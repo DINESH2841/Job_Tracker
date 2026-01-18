@@ -31,6 +31,12 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500">Tracking your job applications from Firestore</p>
         </div>
         <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/settings/gmail')}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+            >
+              Gmail Settings
+            </button>
           <span className="text-sm text-gray-600">
             {user.displayName || user.email}
           </span>

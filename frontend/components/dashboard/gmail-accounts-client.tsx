@@ -42,7 +42,10 @@ export default function GmailAccountsClient() {
   const handleLinkAccount = async () => {
     try {
       const url = await startGmailAuth()
-      window.location.href = url
+      window.open(url, '_blank', 'width=600,height=700')
+      setTimeout(() => {
+        fetchAccounts()
+      }, 3000)
     } catch (err) {
       console.error('Failed to start auth', err)
       alert('Failed to start connection process')
@@ -52,9 +55,9 @@ export default function GmailAccountsClient() {
   const handleSyncNow = async () => {
     setIsSyncing(true)
     try {
-      await syncGmailNow()
-      await fetchAccounts() // Refresh list to update lastSyncAt
-      alert('Sync successful! Your applications are being updated.')
+      const result = await syncGmailNow()
+      await fetchAccounts()
+      alert(result.message || 'Sync successful!')
     } catch (err) {
       console.error('Sync failed', err)
       alert('Failed to sync emails. Please try again.')

@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
-import { getFunctions, Functions } from "firebase/functions";
+import { getAuth, Auth, GoogleAuthProvider, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, Firestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getFunctions, Functions, connectFunctionsEmulator } from "firebase/functions";
 
 // Helper to prevent build crashes when env vars are missing
 const getEnv = (key: string, fallback: string) => {
@@ -34,6 +34,20 @@ try {
     db = getFirestore(app);
     functions = getFunctions(app);
     googleProvider = new GoogleAuthProvider();
+
+    // Connect to emulators only when explicitly enabled
+    const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === 'true';
+    if (useEmulators) {
+        try {
+            connectAuthEmulator(auth, 'http://localhost:9099');
+        } catch {}
+        try {
+            connectFirestoreEmulator(db, 'localhost', 8080);
+        } catch {}
+        try {
+            connectFunctionsEmulator(functions, 'localhost', 5001);
+        } catch {}
+    }
 } catch (error) {
     console.warn("Firebase initialization failed (likely due to missing env vars during build). Using mocks if possible or letting it fail gracefully.", error);
     // If we crash here, the build fails. So we swallow the error for build-time safety.

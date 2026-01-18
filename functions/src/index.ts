@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import * as cors from "cors";
+import cors from "cors";
 
 // Controllers
 import * as gmailController from "./controllers/gmail";
@@ -45,3 +45,4 @@ export const getProfile = functions.https.onRequest(async (req, res) => {
 export const startGmailAuth = gmailController.startGmailAuth;
 export const oauthCallback = gmailController.oauthCallback;
 export const getGmailAccounts = gmailController.getGmailAccounts;
+export const syncGmailNow = gmailController.syncGmailNow;

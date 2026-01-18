@@ -54,7 +54,7 @@ export const syncGmailNow = onCall(async (request) => {
     console.log(`Starting manual sync for user ${uid}...`);
 
     try {
-        const accountsRef = admin.firestore().collection('users').doc(uid).collection('gmail_accounts');
+        const accountsRef = admin.firestore().collection('users').doc(uid).collection('gmailAccounts');
         const snapshot = await accountsRef.get();
 
         if (snapshot.empty) {
@@ -65,7 +65,7 @@ export const syncGmailNow = onCall(async (request) => {
         const promises = snapshot.docs.map(async (doc) => {
             const d = doc.data();
             const email = d.email;
-            // Construct token object required by simple-gmail or googleapis
+            // Construct token object required by googleapis
             const tokens = {
                 access_token: d.accessToken,
                 refresh_token: d.refreshToken,
@@ -75,12 +75,16 @@ export const syncGmailNow = onCall(async (request) => {
             };
 
             console.log(`Syncing email: ${email}`);
-            await syncEmailsForUser(uid, email, tokens);
-            syncCount++;
+            try {
+                const count = await syncEmailsForUser(uid, email, tokens);
+                syncCount += (typeof count === 'number' ? count : 0);
+            } catch (e) {
+                console.error(`Failed to sync ${email}:`, e);
+            }
         });
 
         await Promise.all(promises);
-        console.log(`Synced ${syncCount} accounts for user ${uid}.`);
+        console.log(`Synced ${syncCount} messages for user ${uid}.`);
         return { success: true, count: syncCount };
 
     } catch (error: any) {
@@ -112,14 +116,20 @@ export const oauthCallback = onRequest(async (req, res) => {
     try {
         const result = await handleOAuthCallback(code, state);
 
-        // Redirect to frontend on success
-        // Use FRONTEND_URL env var, fallback to localhost
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        // Redirect to frontend on success; require explicit FRONTEND_URL
+        const frontendUrl = process.env.FRONTEND_URL;
+        if (!frontendUrl) {
+            throw new Error('FRONTEND_URL is not configured');
+        }
         res.redirect(`${frontendUrl}/settings/gmail?status=success&email=${encodeURIComponent(result.email || '')}`);
 
     } catch (err: any) {
         console.error('Error in oauthCallback:', err);
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const frontendUrl = process.env.FRONTEND_URL;
+        if (!frontendUrl) {
+            res.status(500).send('FRONTEND_URL is not configured');
+            return;
+        }
         res.redirect(`${frontendUrl}/settings/gmail?status=error&message=${encodeURIComponent(err.message)}`);
     }
 });

@@ -86,11 +86,13 @@ app.get("/api/gmail/callback", async (req: Request, res: Response) => {
   try {
     const result = await handleOAuthCallback(code as string, state as string);
     // Redirect to frontend on success
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) throw new Error('FRONTEND_URL not configured');
     res.redirect(`${frontendUrl}/settings/gmail?status=success&email=${encodeURIComponent(result.email || '')}`);
   } catch (err: any) {
     logger.error("Error in gmail callback", err);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) throw new Error('FRONTEND_URL not configured');
     res.redirect(`${frontendUrl}/settings/gmail?status=error&message=${encodeURIComponent(err.message)}`);
   }
 });
