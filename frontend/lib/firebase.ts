@@ -10,13 +10,15 @@ const getEnv = (key: string, fallback: string) => {
 };
 
 const firebaseConfig = {
-    apiKey: getEnv("NEXT_PUBLIC_FIREBASE_API_KEY", "AIzaSy_MOCK_KEY_FOR_BUILD"),
-    authDomain: getEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "mock-project.firebaseapp.com"),
-    projectId: getEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID", "mock-project"),
-    storageBucket: getEnv("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET", "mock-project.firebasestorage.app"),
-    messagingSenderId: getEnv("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID", "123456789"),
-    appId: getEnv("NEXT_PUBLIC_FIREBASE_APP_ID", "1:123456789:web:abcdef"),
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
+
 
 // Singleton pattern for Firebase
 let app: FirebaseApp;

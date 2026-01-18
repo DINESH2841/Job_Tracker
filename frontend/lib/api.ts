@@ -1,6 +1,6 @@
 import { auth } from "./firebase";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/job-tracker-abb1c/us-central1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const user = auth.currentUser;
