@@ -35,7 +35,12 @@ try {
 
     // Allow overriding the Functions base (region or custom domain) to avoid hitting cloudfunctions.net in the browser.
     const functionsBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE || "us-central1";
+    const isCustomDomain = functionsBase.startsWith("http://") || functionsBase.startsWith("https://");
     functions = getFunctions(app, functionsBase);
+    if (isCustomDomain) {
+        // Ensure callable SDK uses the Hosting rewrite path (no cloudfunctions.net).
+        (functions as any).customDomain = functionsBase;
+    }
 
     googleProvider = new GoogleAuthProvider();
 

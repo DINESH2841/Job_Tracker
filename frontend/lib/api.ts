@@ -16,20 +16,22 @@ interface SyncResponse {
     message?: string;
 }
 
+const callApi = async <T>(action: string, payload?: Record<string, unknown>): Promise<T> => {
+    const callable = httpsCallable<{ action: string } & Record<string, unknown>, T>(functions, "api");
+    const result = await callable({ action, ...(payload || {}) });
+    return result.data;
+};
+
 export async function startGmailAuth() {
-    const startAuth = httpsCallable<void, AuthUrlResponse>(functions, 'startGmailAuth');
-    const result = await startAuth();
-    return result.data.url;
+    const data = await callApi<AuthUrlResponse>("startGmailAuth");
+    return data.url;
 }
 
 export async function getGmailAccounts() {
-    const getAccounts = httpsCallable<void, GmailAccountsResponse>(functions, 'getGmailAccounts');
-    const result = await getAccounts();
-    return result.data.accounts;
+    const data = await callApi<GmailAccountsResponse>("getGmailAccounts");
+    return data.accounts;
 }
 
 export async function syncGmailNow() {
-    const syncFn = httpsCallable<void, SyncResponse>(functions, 'syncGmailNow');
-    const result = await syncFn();
-    return result.data;
+    return callApi<SyncResponse>("syncGmailNow");
 }
