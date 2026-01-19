@@ -1,26 +1,26 @@
-import { Request, Response, NextFunction } from "express";
-import { verifySession } from "../services/token.service";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    provider: string;
-  };
+export interface AuthRequest extends Request {
+  user?: any; // Define a stricter type if shared between files
 }
 
-export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header || !header.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Missing or invalid authorization header" });
+export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const token = req.cookies.token; // Assumes 'token' cookie
+
+  if (!token) {
+    res.status(401).json({ message: 'Unauthorized' });
+    return;
   }
 
   try {
-    const token = header.replace("Bearer ", "").trim();
-    const decoded = verifySession(token);
-    req.user = { id: decoded.sub, email: decoded.email, provider: decoded.provider };
-    return next();
-  } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Auth Middleware Error:', error);
+    res.status(401).json({ message: 'Invalid or expired token' });
+    return;
   }
-}
+};

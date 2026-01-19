@@ -1,7 +1,7 @@
 // TASK:
-// Build a simple applications dashboard using Firestore data.
+// Build a simple applications dashboard using REST API.
 // Do NOT create or modify files outside dashboard and lib directories.
-// Use existing Firebase client from lib/firebase.ts.
+// Use REST API client from lib/api.ts.
 'use client'
 
 import { useEffect } from 'react'
@@ -28,7 +28,7 @@ export default function DashboardPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Applications</h1>
-          <p className="text-sm text-gray-500">Tracking your job applications from Firestore</p>
+          <p className="text-sm text-gray-500">Tracking your job applications</p>
         </div>
         <div className="flex items-center gap-4">
             <button
@@ -38,7 +38,7 @@ export default function DashboardPage() {
               Gmail Settings
             </button>
           <span className="text-sm text-gray-600">
-            {user.displayName || user.email}
+            {user.name || user.email}
           </span>
           <button
             onClick={() => signOut()}
@@ -50,7 +50,7 @@ export default function DashboardPage() {
       </header>
 
       <section className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-        <ApplicationTable userId={user.uid} />
+        <ApplicationTable />
       </section>
     </main>
   )

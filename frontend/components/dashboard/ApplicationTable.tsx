@@ -1,14 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { db } from "@/lib/firebase"
-import {
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
-  DocumentData,
-} from "firebase/firestore"
+import { getApplications } from "@/lib/api"
 import ApplicationRow from "./ApplicationRow"
 
 export interface Application {
@@ -20,41 +13,47 @@ export interface Application {
   [key: string]: unknown
 }
 
-interface Props {
-  userId: string
-}
-
-export default function ApplicationTable({ userId }: Props) {
+export default function ApplicationTable() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!userId) return
-
-    const appsRef = collection(db, "users", userId, "applications")
-    const q = query(appsRef)
-
-    const unsub = onSnapshot(
-      q,
-      (snapshot) => {
-        const items = snapshot.docs.map((doc) => normalizeApplication(doc.id, doc.data()))
-        // Client-side sort: desc
-        items.sort((a, b) => {
-          const dateA = a.appliedAt ? new Date(a.appliedAt).getTime() : 0;
-          const dateB = b.appliedAt ? new Date(b.appliedAt).getTime() : 0;
-          return dateB - dateA;
+    const fetchApplications = async () => {
+      try {
+        const apps = await getApplications()
+        const normalized = apps.map((app: any) => ({
+          id: app._id || app.id,
+          company: app.company || "Unknown",
+          role: app.role || "Unknown",
+          status: app.status || "applied",
+          appliedAt: app.appliedAt ? new Date(app.appliedAt) : null,
+          ...app
+        }))
+        // Sort by appliedAt descending
+        normalized.sort((a: Application, b: Application) => {
+          const dateA = a.appliedAt ? new Date(a.appliedAt).getTime() : 0
+          const dateB = b.appliedAt ? new Date(b.appliedAt).getTime() : 0
+          return dateB - dateA
         })
-        setApplications(items)
+        setApplications(normalized)
         setLoading(false)
-      },
-      () => setLoading(false)
-    )
+      } catch (err: any) {
+        console.error("Failed to load applications", err)
+        setError(err.response?.data?.error || "Failed to load applications")
+        setLoading(false)
+      }
+    }
 
-    return () => unsub()
-  }, [userId])
+    fetchApplications()
+  }, [])
 
   if (loading) {
     return <div className="p-6">Loading applications...</div>
+  }
+
+  if (error) {
+    return <div className="p-6 text-red-600">Error: {error}</div>
   }
 
   if (!applications.length) {
@@ -81,16 +80,4 @@ export default function ApplicationTable({ userId }: Props) {
       </table>
     </div>
   )
-}
-
-function normalizeApplication(id: string, data: DocumentData): Application {
-  const appliedAt = data.appliedAt?.toDate ? data.appliedAt.toDate() : data.appliedAt ?? null
-  return {
-    id,
-    company: data.company ?? data.companyName ?? "Unknown",
-    role: data.role ?? data.jobRole ?? "Unknown",
-    status: data.status ?? "applied",
-    appliedAt,
-    ...data,
-  }
 }

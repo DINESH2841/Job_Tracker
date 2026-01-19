@@ -2,35 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
-import { FirebaseError } from 'firebase/app'
-import { startGmailAuth, getGmailAccounts, syncGmailNow } from '@/lib/api'
-import { useAuth } from '@/components/providers/auth-provider'
+import { getGmailAuthUrl, getGmailAccounts, syncGmailNow } from '@/lib/api'
 
 interface GmailAccountLite {
-  id: string
   email: string
-  syncEnabled?: boolean // mapped from 'enabled' but server might return syncEnabled matching definition
-  createdAt?: string | Date
-  lastSyncAt?: string | Date | null
-  status?: string
+  connected: boolean
 }
 
 export default function GmailAccountsClient() {
-  const { user } = useAuth()
   const [accounts, setAccounts] = useState<GmailAccountLite[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const friendlyMessage = (err: unknown, fallback: string) => {
-    if (err instanceof FirebaseError) {
-      return err.message || fallback
-    }
-    if (err && typeof err === 'object' && 'message' in err) {
-      return (err as any).message || fallback
-    }
-    return fallback
-  }
 
   const fetchAccounts = async () => {
     try {
@@ -38,29 +21,27 @@ export default function GmailAccountsClient() {
       setAccounts(data)
       setIsLoading(false)
       setError(null)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch accounts', err)
-      setError(friendlyMessage(err, 'Failed to load accounts'))
+      setError(err.response?.data?.error || 'Failed to load accounts')
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    if (user) {
-      fetchAccounts()
-    }
-  }, [user])
+    fetchAccounts()
+  }, [])
 
   const handleLinkAccount = async () => {
     try {
-      const url = await startGmailAuth()
+      const url = await getGmailAuthUrl()
       window.open(url, '_blank', 'width=600,height=700')
       setTimeout(() => {
         fetchAccounts()
       }, 3000)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to start auth', err)
-      alert(friendlyMessage(err, 'Failed to start connection process'))
+      alert(err.response?.data?.error || 'Failed to start connection process')
     }
   }
 
@@ -70,9 +51,9 @@ export default function GmailAccountsClient() {
       const result = await syncGmailNow()
       await fetchAccounts()
       alert(result.message || 'Sync successful!')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Sync failed', err)
-      alert(friendlyMessage(err, 'Failed to sync emails. Please try again.'))
+      alert(err.response?.data?.error || 'Failed to sync emails. Please try again.')
     } finally {
       setIsSyncing(false)
     }
@@ -149,7 +130,7 @@ export default function GmailAccountsClient() {
             </div>
           ) : (
             accounts.map((account) => (
-              <div key={account.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition hover:shadow-md">
+              <div key={account.email} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition hover:shadow-md">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
@@ -158,42 +139,25 @@ export default function GmailAccountsClient() {
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900">{account.email}</h3>
                       <span
-                        className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${account.status === 'active'
+                        className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${account.connected
                           ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
                           }`}
                       >
-                        {account.status || 'Active'}
+                        {account.connected ? 'Connected' : 'Not Connected'}
                       </span>
-                    </div>
-                    <div className="ml-13 text-sm text-gray-500 space-y-1 pl-13">
-                      <p className="flex items-center text-gray-500">
-                        <svg className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Added: {account.createdAt ? format(new Date(account.createdAt), 'MMM d, yyyy') : 'N/A'}
-                      </p>
-                      {account.lastSyncAt ? (
-                        <p className="flex items-center text-green-600">
-                          <svg className="mr-1.5 h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          Last synced: {format(new Date(account.lastSyncAt), 'MMM d, yyyy h:mm a')}
-                        </p>
-                      ) : (
-                        <p className="text-gray-400 italic pl-6">Never synced</p>
-                      )}
                     </div>
                   </div>
 
                   <div className="flex space-x-2">
-                    {/* Placeholder for Toggle/Sync/Remove - Phase 1.1 focuses on Linking */}
-                    <button
-                      className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-gray-700 bg-gray-50 rounded border border-gray-200"
-                      onClick={() => alert('Sync/Manage features coming in Phase 1.2')}
-                    >
-                      Manage
-                    </button>
+                    {account.connected && (
+                      <button
+                        className="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-800 bg-red-50 rounded border border-red-200"
+                        onClick={() => alert('Disconnect feature coming soon')}
+                      >
+                        Disconnect
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

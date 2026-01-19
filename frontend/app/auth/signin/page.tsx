@@ -1,12 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { signInWithPopup } from 'firebase/auth'
-import { auth, googleProvider } from '@/lib/firebase'
+import { getLoginUrl } from '@/lib/api'
 
 export default function SignInPage() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -14,8 +11,8 @@ export default function SignInPage() {
     setIsLoading(true)
     setError('')
     try {
-      await signInWithPopup(auth, googleProvider)
-      router.push('/dashboard')
+      const loginUrl = getLoginUrl()
+      window.location.href = loginUrl
     } catch (error) {
       console.error('Login error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to sign in with Google'
@@ -66,7 +63,7 @@ export default function SignInPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span>Continue with Google</span>
+            <span>{isLoading ? 'Signing in...' : 'Continue with Google'}</span>
           </button>
         </div>
       </div>

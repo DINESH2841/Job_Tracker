@@ -1,12 +1,18 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { getCurrentUser, logout } from "@/lib/api";
+
+interface AuthUser {
+    id: string;
+    email: string;
+    name?: string;
+    picture?: string;
+}
 
 interface AuthContextType {
-    user: User | null;
+    user: AuthUser | null;
     loading: boolean;
     signOut: () => Promise<void>;
 }
@@ -20,22 +26,35 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
-            setLoading(false);
-        });
+        const checkAuth = async () => {
+            try {
+                const currentUser = await getCurrentUser();
+                setUser(currentUser);
+            } catch (err) {
+                // No valid session; user is logged out
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        return () => unsubscribe();
+        checkAuth();
     }, []);
 
     const signOut = async () => {
-        await firebaseSignOut(auth);
-        router.push("/auth/signin");
+        try {
+            await logout();
+            setUser(null);
+            router.push("/auth/signin");
+        } catch (err) {
+            console.error("Logout failed", err);
+            router.push("/auth/signin");
+        }
     };
 
     return (
