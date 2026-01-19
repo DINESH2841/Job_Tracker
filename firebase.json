@@ -7,15 +7,6 @@
   },
   "hosting": {
     "public": "frontend/out",
-    "rewrites": [
-      {
-        "source": "/functions/**",
-        "function": {
-          "name": "api",
-          "region": "us-central1"
-        }
-      }
-    ],
     "ignore": [
       "firebase.json",
       "**/.*",

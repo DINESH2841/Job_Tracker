@@ -32,16 +32,7 @@ try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
-
-    // Allow overriding the Functions base (region or custom domain) to avoid hitting cloudfunctions.net in the browser.
-    const functionsBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE || "us-central1";
-    const isCustomDomain = functionsBase.startsWith("http://") || functionsBase.startsWith("https://");
-    functions = getFunctions(app, functionsBase);
-    if (isCustomDomain) {
-        // Ensure callable SDK uses the Hosting rewrite path (no cloudfunctions.net).
-        (functions as any).customDomain = functionsBase;
-    }
-
+    functions = getFunctions(app, "us-central1");
     googleProvider = new GoogleAuthProvider();
 
     // Connect to emulators only when explicitly enabled
