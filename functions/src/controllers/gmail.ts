@@ -1,11 +1,9 @@
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { google } from "googleapis";
-import cors from "cors";
 import { encrypt, decrypt } from "../utils/crypto";
 
 const db = admin.firestore();
-const corsHandler = cors({ origin: true });
 
 // Secrets configuration
 const SECRETS = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ENCRYPTION_KEY"];
@@ -57,98 +55,92 @@ export const startGmailAuth = onCall({ secrets: SECRETS }, async (request) => {
 });
 
 // 2. OAuth Callback
-export const oauthCallback = onRequest({ secrets: SECRETS }, (req, res) => {
-    corsHandler(req, res, async () => {
+export const oauthCallback = onRequest({ secrets: SECRETS }, async (req, res) => {
         const { code, state } = req.query;
 
         if (!code || typeof code !== "string" || !state || typeof state !== "string") {
-            res.status(400).send("Invalid request: Missing code or text");
-            return;
+                res.status(400).send("Invalid request: Missing code or text");
+                return;
         }
 
         const uid = state as string; // The state we passed was the UID
 
         try {
-            const oauth2Client = getOauthClient();
-            // Exchange code for tokens
-            const { tokens } = await oauth2Client.getToken(code);
-            oauth2Client.setCredentials(tokens);
+                const oauth2Client = getOauthClient();
+                const { tokens } = await oauth2Client.getToken(code);
+                oauth2Client.setCredentials(tokens);
 
-            // Get user email to identify account
-            const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
-            const userInfo = await oauth2.userinfo.get();
-            const email = userInfo.data.email;
+                const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
+                const userInfo = await oauth2.userinfo.get();
+                const email = userInfo.data.email;
 
-            if (!email) {
-                throw new Error("Could not retrieve email address");
-            }
+                if (!email) {
+                        throw new Error("Could not retrieve email address");
+                }
 
-            const accountsRef = db.collection("users").doc(uid).collection("gmailAccounts");
-            const snapshot = await accountsRef.where("email", "==", email).get();
+                const accountsRef = db.collection("users").doc(uid).collection("gmailAccounts");
+                const snapshot = await accountsRef.where("email", "==", email).get();
 
-            if (!snapshot.empty) {
-                // Already exists, update tokens
-                const docId = snapshot.docs[0].id;
-                await accountsRef.doc(docId).update({
-                    accessToken: encrypt(tokens.access_token || ""),
-                    refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined,
-                    status: "active",
-                    lastError: null,
-                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-                });
-            } else {
-                // Create new
-                await accountsRef.add({
-                    email: email,
-                    accessToken: encrypt(tokens.access_token || ""),
-                    refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : "",
-                    syncEnabled: true,
-                    lastSyncAt: null,
-                    status: "active",
-                    lastError: null,
-                    createdAt: admin.firestore.FieldValue.serverTimestamp()
-                });
-            }
-
-            try {
-                await syncEmailsForUser(uid, email, tokens.access_token || "", tokens.refresh_token || undefined);
-                await accountsRef.where("email", "==", email).get().then(snap => {
-                    if (!snap.empty) {
-                        accountsRef.doc(snap.docs[0].id).update({
-                            lastSyncAt: admin.firestore.FieldValue.serverTimestamp()
+                if (!snapshot.empty) {
+                        const docId = snapshot.docs[0].id;
+                        await accountsRef.doc(docId).update({
+                                accessToken: encrypt(tokens.access_token || ""),
+                                refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined,
+                                status: "active",
+                                lastError: null,
+                                updatedAt: admin.firestore.FieldValue.serverTimestamp()
                         });
-                    }
-                });
-            } catch (syncError) {
-                console.error("Initial sync failed:", syncError);
-            }
+                } else {
+                        await accountsRef.add({
+                                email: email,
+                                accessToken: encrypt(tokens.access_token || ""),
+                                refreshToken: tokens.refresh_token ? encrypt(tokens.refresh_token) : "",
+                                syncEnabled: true,
+                                lastSyncAt: null,
+                                status: "active",
+                                lastError: null,
+                                createdAt: admin.firestore.FieldValue.serverTimestamp()
+                        });
+                }
 
-            res.send(`
-        <html>
-          <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-            <h1 style="color: green;">Successfully Connected!</h1>
-            <p>Gmail account ${email} has been linked.</p>
-            <p>Initial sync is in progress...</p>
-            <p>You can close this window now.</p>
-            <script>
-              setTimeout(() => window.close(), 2000);
-            </script>
-          </body>
-        </html>
-      `);
+                try {
+                        await syncEmailsForUser(uid, email, tokens.access_token || "", tokens.refresh_token || undefined);
+                        await accountsRef.where("email", "==", email).get().then(snap => {
+                                if (!snap.empty) {
+                                        accountsRef.doc(snap.docs[0].id).update({
+                                                lastSyncAt: admin.firestore.FieldValue.serverTimestamp()
+                                        });
+                                }
+                        });
+                } catch (syncError) {
+                        console.error("Initial sync failed:", syncError);
+                }
+
+                res.send(`
+                <html>
+                    <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                        <h1 style="color: green;">Successfully Connected!</h1>
+                        <p>Gmail account ${email} has been linked.</p>
+                        <p>Initial sync is in progress...</p>
+                        <p>You can close this window now.</p>
+                        <script>
+                            setTimeout(() => window.close(), 2000);
+                        </script>
+                    </body>
+                </html>
+            `);
 
         } catch (error) {
-            console.error("OAuth callback error:", error);
-            res.status(500).send(`
-        <html>
-          <body style="color: red; font-family: sans-serif; text-align: center; padding: 50px;">
-            <h1>Connection Failed</h1>
-            <p>${error instanceof Error ? error.message : "Unknown error"}</p>
-          </body>
-        </html>
-      `);
+                console.error("OAuth callback error:", error);
+                res.status(500).send(`
+                <html>
+                    <body style="color: red; font-family: sans-serif; text-align: center; padding: 50px;">
+                        <h1>Connection Failed</h1>
+                        <p>${error instanceof Error ? error.message : "Unknown error"}</p>
+                    </body>
+                </html>
+            `);
         }
-    });
 });
 
 async function syncEmailsForUser(uid: string, email: string, accessToken: string, refreshToken?: string): Promise<number> {
