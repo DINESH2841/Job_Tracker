@@ -51,26 +51,36 @@ router.get('/callback', async (req, res) => {
         const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
         const userInfo = await oauth2.userinfo.get();
 
-        if (!userInfo.data.email || !userInfo.data.id) {
+        const googleId = userInfo.data.id ?? '';
+        const email = userInfo.data.email ?? '';
+
+        if (!googleId || !email) {
             res.status(400).send('Could not retrieve user info');
             return;
         }
 
+        const name = userInfo.data.name ?? 'User';
+        const picture = userInfo.data.picture ?? undefined;
+        const accessToken = tokens.access_token ?? undefined;
+        const refreshToken = tokens.refresh_token ?? undefined;
+
         // Upsert user
-        let user = await User.findOne({ googleId: userInfo.data.id });
+        let user = await User.findOne({ googleId });
         if (!user) {
             user = await User.create({
-                googleId: userInfo.data.id,
-                email: userInfo.data.email,
-                name: userInfo.data.name || 'User',
-                picture: userInfo.data.picture,
-                accessToken: tokens.access_token,
-                refreshToken: tokens.refresh_token
+                googleId,
+                email,
+                name,
+                picture,
+                accessToken,
+                refreshToken
             });
         } else {
             // Update tokens
-            user.accessToken = tokens.access_token;
-            user.refreshToken = tokens.refresh_token;
+            user.accessToken = accessToken;
+            if (refreshToken) {
+                user.refreshToken = refreshToken;
+            }
             await user.save();
         }
 

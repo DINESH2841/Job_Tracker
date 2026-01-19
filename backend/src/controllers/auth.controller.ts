@@ -3,7 +3,10 @@ import crypto from "crypto";
 import { User } from "../models/user.model";
 import { signSession } from "../services/token.service";
 import { logger } from "../utils/logger";
-import { AuthenticatedRequest } from "../middleware/auth.middleware";
+
+type AuthenticatedRequest = Request & {
+  user?: { id: string; email?: string };
+};
 
 // In-memory stand-in until persistence is wired.
 const users = new Map<string, User>();
