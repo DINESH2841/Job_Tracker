@@ -1,11 +1,41 @@
 services:
+  # Backend - Express API
+  - type: web
+    name: job-tracker-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: PORT
+        value: 10000
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+
   # Frontend - Next.js App
   - type: web
     name: job-tracker-frontend
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build --workspace=frontend
-    startCommand: cd frontend && npm run start
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
@@ -25,5 +55,7 @@ services:
         sync: false
       - key: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
         sync: false
-
-  # Backend Express service disabled: using Firebase Cloud Functions instead
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
