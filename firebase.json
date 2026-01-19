@@ -3,7 +3,7 @@
     "predeploy": [
       "npm --prefix \"$RESOURCE_DIR\" run build"
     ],
-    "source": "backend"
+    "source": "functions"
   },
   "hosting": {
     "public": "frontend/out",

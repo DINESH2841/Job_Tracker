@@ -16,9 +16,10 @@ export default function SignInPage() {
     try {
       await signInWithPopup(auth, googleProvider)
       router.push('/dashboard')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login error:', error)
-      setError(error.message || 'Failed to sign in with Google')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign in with Google'
+      setError(errorMessage)
       setIsLoading(false)
     }
   }
@@ -32,7 +33,7 @@ export default function SignInPage() {
               Welcome Back
             </h1>
             <p className="text-gray-600">
-              Sign in to your Job Tracker account (Phase 1)
+              Sign in to your Job Tracker account
             </p>
           </div>
 

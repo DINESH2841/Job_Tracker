@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { google } from "googleapis";
 import cors from "cors";
@@ -7,16 +7,24 @@ import { encrypt, decrypt } from "../utils/crypto";
 const db = admin.firestore();
 const corsHandler = cors({ origin: true });
 
-// Configuration - Load from env vars in production
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "http://localhost:5001/job-tracker-abb1c/us-central1/oauthCallback";
+// Secrets configuration
+const SECRETS = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ENCRYPTION_KEY"];
 
-const oauth2Client = new google.auth.OAuth2(
-    CLIENT_ID,
-    CLIENT_SECRET,
-    REDIRECT_URI
-);
+// Configuration - Load from env vars
+// Note: These will be populated at runtime if secrets are set correctly
+const getEnv = (key: string) => process.env[key];
+
+const getOauthClient = () => {
+    const CLIENT_ID = getEnv("GOOGLE_CLIENT_ID");
+    const CLIENT_SECRET = getEnv("GOOGLE_CLIENT_SECRET");
+    const REDIRECT_URI = getEnv("GOOGLE_REDIRECT_URI");
+
+    if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
+        throw new Error("Missing required Google OAuth environment variables.");
+    }
+
+    return new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
+};
 
 // Scopes for reading Gmail
 const SCOPES = [
@@ -25,14 +33,15 @@ const SCOPES = [
 ];
 
 // 1. Start Gmail OAuth Flow (Callable)
-export const startGmailAuth = functions.https.onCall(async (data, context) => {
-    if (!context?.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
+export const startGmailAuth = onCall({ secrets: SECRETS }, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "User must be authenticated");
     }
 
-    const uid = context.auth.uid;
+    const uid = request.auth.uid;
 
     try {
+        const oauth2Client = getOauthClient();
         const authUrl = oauth2Client.generateAuthUrl({
             access_type: "offline",
             scope: SCOPES,
@@ -43,12 +52,12 @@ export const startGmailAuth = functions.https.onCall(async (data, context) => {
         return { url: authUrl };
     } catch (error) {
         console.error("Auth start error:", error);
-        throw new functions.https.HttpsError("internal", "Failed to start auth flow");
+        throw new HttpsError("internal", "Failed to start auth flow");
     }
 });
 
 // 2. OAuth Callback
-export const oauthCallback = functions.https.onRequest((req, res) => {
+export const oauthCallback = onRequest({ secrets: SECRETS }, (req, res) => {
     corsHandler(req, res, async () => {
         const { code, state } = req.query;
 
@@ -60,6 +69,7 @@ export const oauthCallback = functions.https.onRequest((req, res) => {
         const uid = state as string; // The state we passed was the UID
 
         try {
+            const oauth2Client = getOauthClient();
             // Exchange code for tokens
             const { tokens } = await oauth2Client.getToken(code);
             oauth2Client.setCredentials(tokens);
@@ -72,11 +82,6 @@ export const oauthCallback = functions.https.onRequest((req, res) => {
             if (!email) {
                 throw new Error("Could not retrieve email address");
             }
-
-            // Check for duplicate linking
-            // We use email as the document ID key to ensure uniqueness per user? 
-            // Or just query? Let's query to give a better error or update existing.
-            // But for simplicity/robustness, we'll store under a unique ID but check if exists.
 
             const accountsRef = db.collection("users").doc(uid).collection("gmailAccounts");
             const snapshot = await accountsRef.where("email", "==", email).get();
@@ -147,8 +152,8 @@ export const oauthCallback = functions.https.onRequest((req, res) => {
 });
 
 async function syncEmailsForUser(uid: string, email: string, accessToken: string, refreshToken?: string): Promise<number> {
-    const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
-    
+    const oauth2Client = getOauthClient();
+
     oauth2Client.setCredentials({
         access_token: accessToken,
         refresh_token: refreshToken
@@ -201,12 +206,12 @@ async function syncEmailsForUser(uid: string, email: string, accessToken: string
 }
 
 // 3. List Linked Accounts (Callable)
-export const getGmailAccounts = functions.https.onCall(async (data, context) => {
-    if (!context?.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
+export const getGmailAccounts = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "User must be authenticated");
     }
 
-    const uid = context.auth.uid;
+    const uid = request.auth.uid;
 
     try {
         const accountsRef = db.collection("users").doc(uid).collection("gmailAccounts");
@@ -228,17 +233,17 @@ export const getGmailAccounts = functions.https.onCall(async (data, context) => 
         return { accounts };
     } catch (error) {
         console.error("List accounts error:", error);
-        throw new functions.https.HttpsError("internal", "Failed to list accounts");
+        throw new HttpsError("internal", "Failed to list accounts");
     }
 });
 
 // 4. Sync Gmail Now (Callable)
-export const syncGmailNow = functions.https.onCall(async (data, context) => {
-    if (!context?.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "User must be authenticated");
+export const syncGmailNow = onCall({ secrets: SECRETS }, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "User must be authenticated");
     }
 
-    const uid = context.auth.uid;
+    const uid = request.auth.uid;
 
     try {
         const accountsRef = db.collection("users").doc(uid).collection("gmailAccounts");
@@ -285,6 +290,6 @@ export const syncGmailNow = functions.https.onCall(async (data, context) => {
         return { success: true, count: totalSynced, message: `Synced ${totalSynced} applications` };
     } catch (error) {
         console.error("Sync error:", error);
-        throw new functions.https.HttpsError("internal", "Failed to sync emails");
+        throw new HttpsError("internal", "Failed to sync emails");
     }
 });
