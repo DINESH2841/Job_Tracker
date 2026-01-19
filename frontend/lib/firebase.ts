@@ -32,7 +32,11 @@ try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
-    functions = getFunctions(app, "us-central1");
+
+    // Allow overriding the Functions base (region or custom domain) to avoid hitting cloudfunctions.net in the browser.
+    const functionsBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE || "us-central1";
+    functions = getFunctions(app, functionsBase);
+
     googleProvider = new GoogleAuthProvider();
 
     // Connect to emulators only when explicitly enabled
