@@ -33,6 +33,11 @@ app.use('/gmail', gmailRoutes);
 app.use('/jobs', jobRoutes);
 
 // Health Check
+app.get('/healthz', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Legacy health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
