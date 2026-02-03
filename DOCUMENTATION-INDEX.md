@@ -131,6 +131,20 @@ This index helps you find the right document for your needs.
 
 ---
 
+## 📋 Requirements & Specifications
+
+### **[SRS-FIREBASE.md](SRS-FIREBASE.md)**
+- **What**: Full Software Requirements Specification (Firebase + Google Auth)
+- **For**: Product owners, architects, and implementation planning
+- **Time**: 20 minutes
+- **Contains**:
+  - Complete system SRS
+  - Phase 1 requirements
+  - Non-functional requirements
+  - Deliverables and constraints
+
+---
+
 ## 📚 Additional Resources
 
 ### Repository Structure
@@ -144,6 +158,7 @@ Documentation/
 ├── VERIFICATION-CHECKLIST.md       Pre-launch validation
 ├── MIGRATION-COMPLETE.md           Status report
 ├── FILES-MODIFIED.md               Change log
+├── SRS-FIREBASE.md                 Requirements specification
 └── DOCUMENTATION-INDEX.md          This file
 
 Code/
@@ -193,7 +208,8 @@ Code/
 | VERIFICATION-CHECKLIST.md | 3 | 1,600 | 5 min | Validation |
 | MIGRATION-COMPLETE.md | 6 | 2,500 | 15 min | Status |
 | FILES-MODIFIED.md | 3 | 1,400 | 5 min | Changes |
-| **TOTAL** | **29** | **13,000** | **68 min** | Complete |
+| SRS-FIREBASE.md | 10 | 5,000 | 20 min | Requirements |
+| **TOTAL** | **39** | **18,000** | **88 min** | Complete |
 
 ---
 
