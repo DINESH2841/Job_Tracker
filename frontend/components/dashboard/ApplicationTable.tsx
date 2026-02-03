@@ -18,33 +18,33 @@ export default function ApplicationTable() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        const apps = await getApplications()
-        const normalized = apps.map((app: any) => ({
-          id: app._id || app.id,
-          company: app.company || "Unknown",
-          role: app.role || "Unknown",
-          status: app.status || "applied",
-          appliedAt: app.appliedAt ? new Date(app.appliedAt) : null,
-          ...app
-        }))
-        // Sort by appliedAt descending
-        normalized.sort((a: Application, b: Application) => {
-          const dateA = a.appliedAt ? new Date(a.appliedAt).getTime() : 0
-          const dateB = b.appliedAt ? new Date(b.appliedAt).getTime() : 0
-          return dateB - dateA
-        })
-        setApplications(normalized)
-        setLoading(false)
-      } catch (err: any) {
-        console.error("Failed to load applications", err)
-        setError(err.response?.data?.error || "Failed to load applications")
-        setLoading(false)
-      }
+  const fetchApplications = async () => {
+    try {
+      const apps = await getApplications()
+      const normalized = apps.map((app: any) => ({
+        id: app._id || app.id,
+        company: app.company || "Unknown",
+        role: app.role || "Unknown",
+        status: app.status || "applied",
+        appliedAt: app.appliedAt ? new Date(app.appliedAt) : null,
+        ...app
+      }))
+      // Sort by appliedAt descending
+      normalized.sort((a: Application, b: Application) => {
+        const dateA = a.appliedAt ? new Date(a.appliedAt).getTime() : 0
+        const dateB = b.appliedAt ? new Date(b.appliedAt).getTime() : 0
+        return dateB - dateA
+      })
+      setApplications(normalized)
+      setLoading(false)
+    } catch (err: any) {
+      console.error("Failed to load applications", err)
+      setError(err.response?.data?.error || "Failed to load applications")
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchApplications()
   }, [])
 
@@ -74,7 +74,7 @@ export default function ApplicationTable() {
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-neutral-800">
           {applications.map((app) => (
-            <ApplicationRow key={app.id} application={app} />
+            <ApplicationRow key={app.id} application={app} onUpdate={fetchApplications} />
           ))}
         </tbody>
       </table>

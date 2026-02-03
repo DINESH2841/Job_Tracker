@@ -1,10 +1,20 @@
-import express from 'express';
+import express, { RequestHandler } from 'express';
 import { google } from 'googleapis';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import User from '../models/User';
 import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
+
+// Rate limiter for auth routes to prevent abuse
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 requests per windowMs
+    message: 'Too many authentication attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+}) as unknown as RequestHandler;
 
 const getOAuth2Client = () => {
     return new google.auth.OAuth2(
@@ -15,7 +25,7 @@ const getOAuth2Client = () => {
 };
 
 // Redirect to Google OAuth
-router.get('/google', (req, res) => {
+router.get('/google', authLimiter, (req, res) => {
     try {
         const oauth2Client = getOAuth2Client();
         const url = oauth2Client.generateAuthUrl({
@@ -35,7 +45,7 @@ router.get('/google', (req, res) => {
 });
 
 // Callback from Google
-router.get('/callback', async (req, res) => {
+router.get('/callback', authLimiter, async (req, res) => {
     const code = req.query.code as string;
 
     if (!code) {
@@ -46,21 +56,38 @@ router.get('/callback', async (req, res) => {
     try {
         const oauth2Client = getOAuth2Client();
         const { tokens } = await oauth2Client.getToken(code);
-        oauth2Client.setCredentials(tokens);
-
-        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-        const userInfo = await oauth2.userinfo.get();
-
-        const googleId = userInfo.data.id ?? '';
-        const email = userInfo.data.email ?? '';
-
-        if (!googleId || !email) {
-            res.status(400).send('Could not retrieve user info');
+        
+        // Validate the ID token
+        if (!tokens.id_token) {
+            res.status(400).send('No ID token received');
             return;
         }
 
-        const name = userInfo.data.name ?? 'User';
-        const picture = userInfo.data.picture ?? undefined;
+        // Verify the token is valid and get user info
+        const ticket = await oauth2Client.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        
+        const payload = ticket.getPayload();
+        if (!payload) {
+            res.status(400).send('Invalid token payload');
+            return;
+        }
+
+        const googleId = payload.sub;
+        const email = payload.email;
+        
+        if (!googleId || !email) {
+            res.status(400).send('Could not retrieve user info from token');
+            return;
+        }
+
+        // Set credentials for Gmail API access
+        oauth2Client.setCredentials(tokens);
+
+        const name = payload.name ?? 'User';
+        const picture = payload.picture ?? undefined;
         const accessToken = tokens.access_token ?? undefined;
         const refreshToken = tokens.refresh_token ?? undefined;
 
