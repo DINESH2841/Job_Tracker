@@ -1,21 +1,22 @@
 import { Application } from "./ApplicationTable"
-import { doc, updateDoc } from "firebase/firestore"
-import { db, auth } from "@/lib/firebase"
 import { useState } from "react"
+import { updateApplication } from "@/lib/api"
 
 interface Props {
   application: Application
+  onUpdate?: () => void
 }
 
-export default function ApplicationRow({ application }: Props) {
+export default function ApplicationRow({ application, onUpdate }: Props) {
   const [updating, setUpdating] = useState(false)
 
   const handleStatusChange = async (newStatus: string) => {
-    if (!auth.currentUser) return
     setUpdating(true)
     try {
-      const docRef = doc(db, "users", auth.currentUser.uid, "applications", application.id)
-      await updateDoc(docRef, { status: newStatus })
+      await updateApplication(application.id, { status: newStatus })
+      if (onUpdate) {
+        onUpdate()
+      }
     } catch (error) {
       console.error("Failed to update status", error)
     } finally {

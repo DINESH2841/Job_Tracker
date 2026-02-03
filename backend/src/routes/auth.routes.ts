@@ -46,21 +46,38 @@ router.get('/callback', async (req, res) => {
     try {
         const oauth2Client = getOAuth2Client();
         const { tokens } = await oauth2Client.getToken(code);
-        oauth2Client.setCredentials(tokens);
-
-        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-        const userInfo = await oauth2.userinfo.get();
-
-        const googleId = userInfo.data.id ?? '';
-        const email = userInfo.data.email ?? '';
-
-        if (!googleId || !email) {
-            res.status(400).send('Could not retrieve user info');
+        
+        // Validate the ID token
+        if (!tokens.id_token) {
+            res.status(400).send('No ID token received');
             return;
         }
 
-        const name = userInfo.data.name ?? 'User';
-        const picture = userInfo.data.picture ?? undefined;
+        // Verify the token is valid and get user info
+        const ticket = await oauth2Client.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        
+        const payload = ticket.getPayload();
+        if (!payload) {
+            res.status(400).send('Invalid token payload');
+            return;
+        }
+
+        const googleId = payload.sub;
+        const email = payload.email;
+        
+        if (!googleId || !email) {
+            res.status(400).send('Could not retrieve user info from token');
+            return;
+        }
+
+        // Set credentials for Gmail API access
+        oauth2Client.setCredentials(tokens);
+
+        const name = payload.name ?? 'User';
+        const picture = payload.picture ?? undefined;
         const accessToken = tokens.access_token ?? undefined;
         const refreshToken = tokens.refresh_token ?? undefined;
 
